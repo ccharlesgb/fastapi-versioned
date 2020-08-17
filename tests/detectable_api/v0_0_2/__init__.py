@@ -1,9 +1,11 @@
-from fastapi import APIRouter
 from fastapi.requests import Request
+from semantic_version import Version
 
-parent_router = APIRouter()
+from fastapi_versioned import VersionRouter
+
+version = VersionRouter(Version("0.0.2"))
 
 
-@parent_router.get("/test")
+@version.router.get("/test2")
 def route(request: Request):
-    return {"version": request.app.version}
+    return {"version": str(request.app.version)}
