@@ -134,3 +134,51 @@ def test_create_two_versions_with_base_sub_router():
     assert response.status_code == 404
     response = client.get(f"/v0.0.2/resource/second")
     assert response.status_code == 404
+
+
+def test_version_router_duplicate_route():
+    vr = VersionRouter(Version("0.0.1"))
+
+    @vr.router.get("/tests/")
+    def test_1():
+        return {"detail": "test"}
+
+    @vr.router.get("/tests/")
+    def test_2():
+        return {"detail": "test2"}
+
+    # These two aren't duplicated by method so shouldn't show up
+    @vr.router.get("/other/")
+    def test_3():
+        return {"detail": "test2"}
+
+    @vr.router.post("/other/")
+    def test_4():
+        return {"detail": "test2"}
+
+    duplicate_endpoints = vr.duplicate_routes
+
+    duplicated_key = ("/tests/", "GET")
+    assert duplicated_key in duplicate_endpoints.keys()
+    assert set(route.endpoint for route in duplicate_endpoints[duplicated_key]) == {
+        test_1,
+        test_2,
+    }
+
+
+def test_version_router_no_duplicate_route():
+    vr = VersionRouter(Version("0.0.1"))
+
+    @vr.router.get("/tests/")
+    def test_1():
+        return {"detail": "test"}
+
+    @vr.router.post("/tests/")
+    def test_2():
+        return {"detail": "test2"}
+
+    @vr.router.get("/other/")
+    def test_3():
+        return {"detail": "test2"}
+
+    assert len(vr.duplicate_routes) == 0

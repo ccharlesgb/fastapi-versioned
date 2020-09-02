@@ -1,7 +1,8 @@
-import pkgutil
 import importlib
+import pkgutil
 import re
 from typing import List
+
 from semantic_version import Version
 
 from fastapi_versioned import VersionRouter

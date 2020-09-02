@@ -1,11 +1,14 @@
-from typing import Dict, List, Tuple, Any, Optional, Callable, Union
+from itertools import chain, groupby
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from fastapi import FastAPI, APIRouter
+from fastapi import APIRouter, FastAPI
+from fastapi.routing import APIRoute
 from openapi_schema_pydantic import OpenAPI
 from pydantic import BaseModel
 from semantic_version import Version
 
 from .changelog import compare_openapi
+from .logger import logger
 
 __all__ = ["VersionRouter", "FastAPIVersioned"]
 
@@ -32,8 +35,13 @@ class ChangeResponse(BaseModel):
 
 
 class VersionRouter:
-    def __init__(self, version: Version, base: Optional["VersionRouter"] = None):
-        self.router = APIRouter()
+    def __init__(
+        self,
+        version: Version,
+        router: Optional[APIRouter] = None,
+        base: Optional["VersionRouter"] = None,
+    ):
+        self.router = router or APIRouter()
         if base:
             self.router.include_router(base.router)
         self.version = version
@@ -76,6 +84,30 @@ class VersionRouter:
     def changes_href(self):
         return f"/changes/{str(self.version)}"
 
+    @property
+    def duplicate_routes(self):
+        """
+        Try and find routes that are duplicated. This normally means you haven't excluded the old route when
+        preparing the new API version if you have modified it
+
+        :return:
+        """
+        # Expand out our routes by method
+        expanded_routes = chain.from_iterable(
+            [((route.path, method), route) for method in route.methods]
+            for route in self.router.routes
+        )
+
+        def sort_key(val: Tuple[Tuple[str, str], APIRoute]):
+            return val[0]
+
+        duplicated_routes = {}
+        for key, routes in groupby(expanded_routes, sort_key):
+            api_routes = [route[1] for route in routes]
+            if len(api_routes) > 1:
+                duplicated_routes[key] = api_routes
+        return duplicated_routes
+
 
 class FastAPIVersioned(FastAPI):
     def __init__(
@@ -90,6 +122,9 @@ class FastAPIVersioned(FastAPI):
         self._version_routers: List[VersionRouter] = sorted(
             versions, key=lambda val: val.version
         )
+
+        self._warn_duplicate_paths()
+
         self._sub_apps: List[Tuple[Version, FastAPI]] = []
         for version_router in self._version_routers:
             self._add_version(version_router)
@@ -106,6 +141,16 @@ class FastAPIVersioned(FastAPI):
             methods=["GET"],
             response_model=List[VersionResponse],
         )
+
+    def _warn_duplicate_paths(self):
+        for router in self._version_routers:
+            duplicate_routes = router.duplicate_routes
+            if duplicate_routes:
+                logger.warning(
+                    f"Version router '{router.version}' contains duplicate routes for "
+                    f"(path, methods)=f{list(duplicate_routes.keys())}. This may indicate you forgot "
+                    f"to exclude the old routes in this version using base_router.without()"
+                )
 
     def _add_version(self, version_router: VersionRouter):
         version_app = FastAPI(version=str(version_router.version), **self._init_kwargs)

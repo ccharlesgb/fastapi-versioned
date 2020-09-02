@@ -1,6 +1,7 @@
 from starlette.testclient import TestClient
 
 from fastapi_versioned import FastAPIVersioned
+
 from .detectable_api import versions as detected_versions
 
 

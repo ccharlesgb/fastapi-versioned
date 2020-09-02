@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import List, Any, Dict, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
-from openapi_schema_pydantic import OpenAPI, PathItem, Operation
+from openapi_schema_pydantic import OpenAPI, Operation, PathItem
 from pydantic import BaseModel
 
 # List of method attributes for openapi_schema_pydantic
