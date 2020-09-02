@@ -3,7 +3,9 @@ from semantic_version import Version
 from fastapi_versioned import VersionRouter
 from .. import v0_0_1
 
-version = VersionRouter(Version("0.0.2"), base=v0_0_1.version.without([v0_0_1.route, v0_0_1.sub_router]))
+version = VersionRouter(
+    Version("0.0.2"), base=v0_0_1.version.without([v0_0_1.route, v0_0_1.sub_router])
+)
 
 
 @version.router.get("/test")

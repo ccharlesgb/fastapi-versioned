@@ -24,6 +24,8 @@ def detect_versions(path: str, name: str) -> List[VersionRouter]:
             version = getattr(module, "version")
             versions.append(version)
         except AttributeError as e:
-            raise ImportError(f"Could not find 'version' attribute in module {module_info.name}")
+            raise ImportError(
+                f"Could not find 'version' attribute in module {module_info.name}"
+            )
 
     return versions

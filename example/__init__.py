@@ -1,4 +1,3 @@
-
 from fastapi_versioned import FastAPIVersioned
 from .api import versions
 
