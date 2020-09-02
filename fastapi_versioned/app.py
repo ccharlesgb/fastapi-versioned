@@ -3,14 +3,20 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from fastapi import APIRouter, FastAPI
 from fastapi.routing import APIRoute
+from fastapi.templating import Jinja2Templates
 from openapi_schema_pydantic import OpenAPI
+from pkg_resources import resource_filename
 from pydantic import BaseModel
 from semantic_version import Version
+from starlette.requests import Request
+from starlette.responses import HTMLResponse
 
 from .changelog import compare_openapi
 from .logger import logger
 
 __all__ = ["VersionRouter", "FastAPIVersioned"]
+
+templates = Jinja2Templates(directory=resource_filename(__name__, "resources"))
 
 
 class VersionResponse(BaseModel):
@@ -81,6 +87,10 @@ class VersionRouter:
         return f"/v{str(self.version)}"
 
     @property
+    def docs_href(self):
+        return f"/v{str(self.version)}/docs"
+
+    @property
     def changes_href(self):
         return f"/changes/{str(self.version)}"
 
@@ -140,6 +150,12 @@ class FastAPIVersioned(FastAPI):
             self._versions_view,
             methods=["GET"],
             response_model=List[VersionResponse],
+        )
+        self.add_api_route(
+            "/changelog",
+            self._changelog_view,
+            methods=["GET"],
+            response_class=HTMLResponse,
         )
 
     def _warn_duplicate_paths(self):
@@ -201,3 +217,13 @@ class FastAPIVersioned(FastAPI):
         changes: List[APIChange] = []
         change = ChangeResponse(transition=transition, change=changes)
         return change
+
+    def _changelog_view(self, request: Request):
+        return templates.TemplateResponse(
+            "changelog.html",
+            {
+                "request": request,
+                "title": self.title,
+                "versions": self._version_routers,
+            },
+        )

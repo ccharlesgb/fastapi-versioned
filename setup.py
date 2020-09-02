@@ -41,12 +41,14 @@ setup(
     url="https://github.com/ccharlesgb/fastapi-versioned",
     license="MIT",
     packages=["fastapi_versioned"],
+    package_data={"static": ["resources/*.html"]},
     zip_safe=True,
     install_requires=[
         "fastapi>0.61.0",
         "pydantic>1",
         "openapi-schema-pydantic==1.1.0",
         "semantic-version>2.8",
+        "Jinja2>2.11",
     ],
     extras_require={"dev": ["pytest>=6.0.0", "requests>=2.24.0"]},
 )

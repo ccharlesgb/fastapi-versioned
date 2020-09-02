@@ -2,8 +2,8 @@
 test:
 	pytest --cov=fastapi_versioned -s
 
-.PHONY: install-dev
-install-dev:
+.PHONY: install
+install:
 	pip3 install -r requirements.txt
 	python setup.py develop
 
