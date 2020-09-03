@@ -82,6 +82,13 @@ def get_users_by_id(db: FakeDB, user_id: int) -> User:
         raise ResourceNotFoundError(f"Could not find user with id={user_id}")
 
 
+def delete_user_by_id(db: FakeDB, user_id: int):
+    try:
+        del db.users[user_id]
+    except KeyError:
+        raise ResourceNotFoundError(f"Could not find user with id={user_id}")
+
+
 def add_user(db: FakeDB, user: UserCreate) -> User:
     new_id = get_new_key(db.users)
     new_user = User(

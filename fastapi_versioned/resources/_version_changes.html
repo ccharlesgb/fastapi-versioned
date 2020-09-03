@@ -1,0 +1,60 @@
+{% macro change_details(vr, change_list) %}
+{% if change_list|length > 0 %}
+    <ul class="list-group">
+        {% for change in change_list.changes %}
+        <li class="list-group-item">
+            <h5 class="mb-2"><span class="badge badge-primary">{{ change.method }}</span> {{ change.path }} </h5>
+            <ul class="list-group">
+                <li class="list-group-item">
+                    {{ change.detail }}
+                </li>
+            </ul>
+        </li>
+        {% endfor %}
+    </ul>
+{% else %}
+There are no changes for this version detected
+{% endif %}
+{% endmacro %}
+
+{% macro change_card(vr, changes, show) %}
+<div class="card">
+    <div class="card-header" id="heading{{ vr.version|replace('.','_') }}">
+        <h2 class="mb-0">
+            <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
+                    data-target="#collapse{{ vr.version|replace('.','_') }}" aria-expanded="{{ show }}"
+                    aria-controls="collapse{{ vr.version|replace('.','_') }}">
+                {{ vr.version }}
+                {% if vr.version in changes %}
+                {% if changes[vr.version].breaking_count > 0 %}
+                <span class="float-right badge badge-danger badge-pill">{{ changes[vr.version].breaking_count }} Breaking Change</span>
+                {% endif %}
+                <span class="float-right badge badge-primary badge-pill">{{ changes[vr.version].change_count }} Change</span>
+                {% endif %}
+            </button>
+        </h2>
+    </div>
+
+    <div id="collapse{{ vr.version|replace('.','_') }}" class="collapse {{'show' if show }}"
+         aria-labelledby="heading{{ vr.version|replace('.','_') }}" data-parent="#accordionExample">
+        <div class="card-body">
+            {% if vr.version in changes %}
+            {{ change_details(vr, changes[vr.version]) }}
+            {% else %}
+            Initial API version. See <a href="{{ vr.docs_href }}">docs for specification</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+
+<div class="accordion" id="accordionExample">
+    {% for vr in versions[:1] %}
+    {{ change_card(vr, changes, true) }}
+    {% endfor %}
+    {% for vr in versions[1:-1] %}
+    {{ change_card(vr, changes, false) }}
+    {% endfor %}
+    {{ change_card(versions[-1], changes, false) }}
+</div>

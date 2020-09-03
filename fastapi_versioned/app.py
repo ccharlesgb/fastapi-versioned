@@ -140,12 +140,6 @@ class FastAPIVersioned(FastAPI):
             self._add_version(version_router)
 
         self.add_api_route(
-            "/changes/{version}",
-            self._changes_view,
-            methods=["GET"],
-            response_model=ChangeResponse,
-        )
-        self.add_api_route(
             versions_path,
             self._versions_view,
             methods=["GET"],
@@ -212,18 +206,15 @@ class FastAPIVersioned(FastAPI):
             )
         return versions
 
-    def _changes_view(self, version: str):
-        transition = Transition(breaking=True, version_previous=version)
-        changes: List[APIChange] = []
-        change = ChangeResponse(transition=transition, change=changes)
-        return change
-
     def _changelog_view(self, request: Request):
+        changes = {key[0]: value for key, value in self.get_version_changes().items()}
+        print(changes)
         return templates.TemplateResponse(
             "changelog.html",
             {
                 "request": request,
                 "title": self.title,
-                "versions": self._version_routers,
+                "versions": list(reversed(self._version_routers)),
+                "changes": changes,
             },
         )

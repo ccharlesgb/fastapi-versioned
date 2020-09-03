@@ -35,45 +35,8 @@
     </div>
 </nav>
 
-<div class="container mt-2 mb-2">
-    <div class="accordion" id="accordionExample">
-        {% for vr in versions[:1] %}
-        <div class="card">
-            <div class="card-header" id="heading{{ vr.version|replace('.','_') }}">
-                <h2 class="mb-0">
-                    <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
-                            data-target="#collapse{{ vr.version|replace('.','_') }}" aria-expanded="true" aria-controls="collapse{{ vr.version|replace('.','_') }}">
-                        {{ vr.version }}
-                    </button>
-                </h2>
-            </div>
-
-            <div id="collapse{{ vr.version|replace('.','_') }}" class="collapse show" aria-labelledby="heading{{ vr.version|replace('.','_') }}" data-parent="#accordionExample">
-                <div class="card-body">
-                    Changes
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-        {% for vr in versions[1:] %}
-        <div class="card">
-            <div class="card-header" id="heading{{ vr.version|replace('.','_') }}">
-                <h2 class="mb-0">
-                    <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
-                            data-target="#collapse{{ vr.version|replace('.','_') }}" aria-expanded="false" aria-controls="collapse{{ vr.version|replace('.','_') }}">
-                        {{ vr.version }}
-                    </button>
-                </h2>
-            </div>
-
-            <div id="collapse{{ vr.version|replace('.','_') }}" class="collapse" aria-labelledby="heading{{ vr.version|replace('.','_') }}" data-parent="#accordionExample">
-                <div class="card-body">
-                    Changes
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
+<div class="container mt-4 mb-2">
+{% include '_version_changes.html' %}
 </div>
 
 <!-- Optional JavaScript -->

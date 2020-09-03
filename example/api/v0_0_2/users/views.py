@@ -17,3 +17,11 @@ def get_all_users(
 
     """
     return core.get_users(parent_app.state.db, is_admin=is_admin)
+
+
+@router.delete("/{user_id}", response_model=core.User, tags=["user"])
+def delete_user(user_id: int, parent_app: FastAPIVersioned = Depends(get_parent_app)):
+    """
+
+    """
+    return core.delete_user_by_id(parent_app.state.db, user_id)

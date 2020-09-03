@@ -15,9 +15,27 @@ class ChangeCategory(Enum):
 
 
 class APIChange(BaseModel):
+    path: str
+    method: str
+
     breaking: bool
     category: ChangeCategory
     detail: str
+
+
+class APIChangeList(BaseModel):
+    changes: List[APIChange]
+
+    @property
+    def breaking_count(self):
+        return sum(1 for _ in filter(lambda val: val.breaking, self.changes))
+
+    @property
+    def change_count(self):
+        return len(self.changes)
+
+    def __len__(self):
+        return len(self.changes)
 
 
 class PathItemChange(PathItem):
@@ -52,7 +70,7 @@ def _extract_path_operations(path: PathItem) -> Dict[str, Operation]:
     return operations
 
 
-def compare_openapi(new: OpenAPI, old: OpenAPI) -> List[APIChange]:
+def compare_openapi(new: OpenAPI, old: OpenAPI) -> APIChangeList:
     api_changes: List[APIChange] = []
 
     added_paths, removed_paths, remain_paths = _get_added_removed_remain(
@@ -61,31 +79,43 @@ def compare_openapi(new: OpenAPI, old: OpenAPI) -> List[APIChange]:
 
     # Removed paths are considered breaking changes
     for path in removed_paths:
-        change = APIChange(
-            breaking=True,
-            category=ChangeCategory.REMOVED,
-            detail=f"Path '{path}' has been removed",
-        )
-        api_changes.append(change)
+        item = old.paths[path]
+        for method in _http_methods:
+            if getattr(item, method) is not None:
+                change = APIChange(
+                    path=path,
+                    method=method,
+                    breaking=True,
+                    category=ChangeCategory.REMOVED,
+                    detail=f"Path '{path}' has been removed",
+                )
+                api_changes.append(change)
 
     # Added paths are not considered breaking
     for path in added_paths:
-        change = APIChange(
-            breaking=False,
-            category=ChangeCategory.ADDED,
-            detail=f"Path '{path}' has been added",
-        )
-        api_changes.append(change)
+        item = new.paths[path]
+        for method in _http_methods:
+            if getattr(item, method) is not None:
+                change = APIChange(
+                    path=path,
+                    method=method,
+                    breaking=False,
+                    category=ChangeCategory.ADDED,
+                    detail=f"Path '{path}' has been added",
+                )
+                api_changes.append(change)
 
     for path in remain_paths:
         new_path = new.paths[path]
         old_path = old.paths[path]
-        api_changes.extend(_get_path_changes(new_path, old_path))
+        api_changes.extend(_get_path_changes(path, new_path, old_path))
+    print("API_CHANGES", api_changes)
+    return APIChangeList(changes=api_changes)
 
-    return api_changes
 
-
-def _get_path_changes(new_item: PathItem, old_item: PathItem) -> List[APIChange]:
+def _get_path_changes(
+    path: str, new_item: PathItem, old_item: PathItem
+) -> List[APIChange]:
     api_changes = []
     new_operations = _extract_path_operations(new_item)
     old_operations = _extract_path_operations(old_item)
@@ -95,6 +125,8 @@ def _get_path_changes(new_item: PathItem, old_item: PathItem) -> List[APIChange]
     # Removing an operation will break clients that are using it
     for method in removed_operations:
         change = APIChange(
+            method=method,
+            path=path,
             breaking=True,
             category=ChangeCategory.REMOVED,
             detail=f"Method '{method}' has been removed",
@@ -103,17 +135,19 @@ def _get_path_changes(new_item: PathItem, old_item: PathItem) -> List[APIChange]
     # An added operation is basically just a path addition so it should be non breaking
     for method in added_operations:
         change = APIChange(
+            method=method,
+            path=path,
             breaking=False,
             category=ChangeCategory.ADDED,
             detail=f"Method '{method}' has been added",
         )
         api_changes.append(change)
 
-    # If the path operation is still there we need to check the parameters and body to see if anything has changed
-    for method in remain_operations:
-        new_operation = new_operations[method]
-        old_operation = old_operations[method]
-        api_changes.extend(_get_operation_changes(new_operation, old_operation))
+    # # If the path operation is still there we need to check the parameters and body to see if anything has changed
+    # for method in remain_operations:
+    #     new_operation = new_operations[method]
+    #     old_operation = old_operations[method]
+    #     api_changes.extend(_get_operation_changes(new_operation, old_operation))
     return api_changes
 
 

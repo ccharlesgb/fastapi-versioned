@@ -33,7 +33,7 @@ jobs:
 
     - name: install dependencies
       run: |
-        make install-dev
+        make install
         pip freeze
 
     - name: pre-commit all
